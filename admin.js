@@ -33,6 +33,7 @@ function initPinAuth() {
 
 // --- 파일 업로드 ---
 let uploadedHtmlContent = '';
+let uploadedFileType = 'html'; // 'html' or 'pdf'
 
 function initFileUpload() {
     const fileInput = document.getElementById('htmlFileInput');
@@ -71,22 +72,30 @@ function initFileUpload() {
     });
 
     function handleFile(file) {
-        if (!file.name.match(/\.(html|htm)$/i)) {
-            showError('HTML 파일만 업로드 가능합니다.');
+        const isHtml = file.name.match(/\.(html|htm)$/i);
+        const isPdf = file.name.match(/\.pdf$/i);
+        if (!isHtml && !isPdf) {
+            showError('HTML 또는 PDF 파일만 업로드 가능합니다.');
             return;
         }
         const reader = new FileReader();
         reader.onload = (e) => {
             uploadedHtmlContent = e.target.result;
+            uploadedFileType = isPdf ? 'pdf' : 'html';
             uploadContent.style.display = 'none';
             preview.style.display = 'flex';
             previewName.textContent = file.name;
         };
-        reader.readAsText(file);
+        if (isPdf) {
+            reader.readAsDataURL(file); // PDF: base64
+        } else {
+            reader.readAsText(file); // HTML: 텍스트
+        }
     }
 
     function clearFile() {
         uploadedHtmlContent = '';
+        uploadedFileType = 'html';
         fileInput.value = '';
         uploadContent.style.display = 'flex';
         preview.style.display = 'none';
@@ -106,7 +115,7 @@ function initNoticeForm() {
         // 검증
         if (!title) { showError('공지 제목을 입력해 주세요.'); return; }
         if (!date) { showError('날짜를 선택해 주세요.'); return; }
-        if (!uploadedHtmlContent) { showError('HTML 파일을 업로드해 주세요.'); return; }
+        if (!uploadedHtmlContent) { showError('HTML 또는 PDF 파일을 업로드해 주세요.'); return; }
 
         hideError();
         submitBtn.disabled = true;
@@ -119,6 +128,7 @@ function initNoticeForm() {
                 date: date,
                 badge: badge,
                 content: uploadedHtmlContent,
+                fileType: uploadedFileType,
                 youtubeUrl: youtubeUrl,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });

@@ -60,7 +60,7 @@ function renderSelectOptions(notices) {
 }
 
 /** 선택된 공지를 뷰어에 표시 */
-function renderNotice(noticeId, notices) {
+async function renderNotice(noticeId, notices) {
     const viewer = document.getElementById('noticeViewer');
     const header = document.getElementById('viewerHeader');
     if (!viewer || !header) return;
@@ -102,12 +102,39 @@ function renderNotice(noticeId, notices) {
         viewer.appendChild(ytWrap);
     }
 
-    // HTML iframe
-    const iframe = document.createElement('iframe');
-    iframe.className = 'notice-iframe';
-    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups');
-    iframe.srcdoc = notice.content;
-    viewer.appendChild(iframe);
+    // 파일 유형에 따라 분기 렌더링
+    const fileType = notice.fileType || 'html';
+
+    if (fileType === 'pdf') {
+        // PDF: base64 data URL → blob → object/embed
+        try {
+            const res = await fetch(notice.content);
+            const blob = await res.blob();
+            const blobUrl = URL.createObjectURL(blob);
+
+            const pdfWrap = document.createElement('div');
+            pdfWrap.style.cssText = 'flex:1;display:flex;flex-direction:column;width:100%;';
+            pdfWrap.innerHTML = `
+                <object data="${blobUrl}" type="application/pdf" 
+                    style="flex:1;width:100%;min-height:calc(100vh - 180px);border:none;">
+                    <p style="text-align:center;padding:40px;">
+                        PDF를 표시할 수 없습니다. 
+                        <a href="${blobUrl}" target="_blank" 
+                            style="color:#0084d1;font-weight:600;">여기를 눌러 직접 열기</a>
+                    </p>
+                </object>`;
+            viewer.appendChild(pdfWrap);
+        } catch (e) {
+            viewer.innerHTML += '<p style="text-align:center;padding:40px;color:#ef4444;">PDF 로드에 실패했습니다.</p>';
+        }
+    } else {
+        // HTML: iframe srcdoc
+        const iframe = document.createElement('iframe');
+        iframe.className = 'notice-iframe';
+        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups');
+        iframe.srcdoc = notice.content;
+        viewer.appendChild(iframe);
+    }
 }
 
 /** 메인 초기화 */
