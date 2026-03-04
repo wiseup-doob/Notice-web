@@ -65,11 +65,9 @@
         </div>
     </aside>
 
-    <!-- 공지사항 선택 및 뷰어 영역 -->
-    <main class="container">
-
-        <!-- 공지사항 선택 드롭다운 -->
-        <div class="notice-selector-wrapper">
+    <!-- 공지사항 선택 영역 -->
+    <main class="container" style="padding-bottom: 16px; min-height: auto;">
+        <div class="notice-selector-wrapper" style="margin-bottom: 0;">
             <label for="noticeSelect" class="selector-label">보실 공지사항을 선택해 주세요</label>
             <div class="custom-select-container">
                 <select id="noticeSelect" class="notice-select">
@@ -84,22 +82,21 @@
                 </div>
             </div>
         </div>
+    </main>
 
-        <!-- 선택된 공지사항 HTML 화면 출력 영역 -->
-        <div class="notice-viewer-container">
-            <!-- 날짜와 배지 표시 영역 -->
-            <div id="viewerHeader" class="viewer-header" style="display:none;">
-                <span id="viewerBadge" class="badge"></span>
-                <span id="viewerDate" class="date"></span>
-            </div>
-
-            <!-- 실제 HTML 컨텐츠가 들어갈 곳 -->
-            <div id="noticeViewer" class="notice-viewer">
-                <!-- app.js가 해당 공지의 HTML을 통째로 렌더링 -->
-            </div>
+    <!-- 선택된 HTML 전체화면 출력 영역 (컨테이너 제한 없음) -->
+    <div class="full-screen-viewer-container">
+        <!-- 날짜와 배지 표시 영역 -->
+        <div id="viewerHeader" class="viewer-header-full" style="display:none;">
+            <span id="viewerBadge" class="badge"></span>
+            <span id="viewerDate" class="date"></span>
         </div>
 
-    </main>
+        <!-- 실제 HTML 컨텐츠 및 iframe이 들어갈 곳 -->
+        <div id="noticeViewer" class="notice-viewer-full">
+            <!-- app.js가 iframe 렌더링 -->
+        </div>
+    </div>
 
     <script src="./app.js"></script>
 </body>
