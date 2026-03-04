@@ -65,11 +65,40 @@
         </div>
     </aside>
 
-    <!-- 공지사항 목록 영역 (app.js가 동적으로 렌더링) -->
+    <!-- 공지사항 선택 및 뷰어 영역 -->
     <main class="container">
-        <div class="notice-list" id="noticeList">
-            <!-- app.js가 localStorage에서 공지를 불러와 여기에 렌더링합니다 -->
+
+        <!-- 공지사항 선택 드롭다운 -->
+        <div class="notice-selector-wrapper">
+            <label for="noticeSelect" class="selector-label">보실 공지사항을 선택해 주세요</label>
+            <div class="custom-select-container">
+                <select id="noticeSelect" class="notice-select">
+                    <!-- app.js가 동적으로 <option> 렌더링 -->
+                    <option value="">불러오는 중...</option>
+                </select>
+                <div class="select-arrow">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+            </div>
         </div>
+
+        <!-- 선택된 공지사항 HTML 화면 출력 영역 -->
+        <div class="notice-viewer-container">
+            <!-- 날짜와 배지 표시 영역 -->
+            <div id="viewerHeader" class="viewer-header" style="display:none;">
+                <span id="viewerBadge" class="badge"></span>
+                <span id="viewerDate" class="date"></span>
+            </div>
+
+            <!-- 실제 HTML 컨텐츠가 들어갈 곳 -->
+            <div id="noticeViewer" class="notice-viewer">
+                <!-- app.js가 해당 공지의 HTML을 통째로 렌더링 -->
+            </div>
+        </div>
+
     </main>
 
     <script src="./app.js"></script>

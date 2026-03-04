@@ -8,3 +8,4 @@ Thumbs.db
 
 # 와이즈업 BI 원본 파일 (배포 제외)
 *.pdf
+.vercel

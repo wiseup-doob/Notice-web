@@ -1,6 +1,5 @@
 /**
- * app.js - 와이즈업 학원 공지사항 사용자 페이지 로직
- * localStorage에서 공지 목록을 읽어와 동적으로 렌더링합니다.
+ * app.js - 와이즈업 학원 공지사항 사용자 페이지 로직 (드롭다운 방식)
  */
 
 const STORAGE_KEY = 'wiseup_notices';
@@ -32,38 +31,7 @@ function formatDate(dateStr) {
 }
 
 /**
- * 공지사항 카드 HTML을 생성합니다.
- */
-function createNoticeCard(notice, index) {
-    const badge = BADGE_CONFIG[notice.badge] || BADGE_CONFIG.notice;
-    const isFirst = index === 0;
-
-    return `
-        <article class="notice-card ${isFirst ? 'expanded' : ''}" data-id="${notice.id}">
-            <div class="notice-header">
-                <div class="notice-meta">
-                    <span class="badge ${badge.className}">${badge.label}</span>
-                    <span class="date">${formatDate(notice.date)}</span>
-                </div>
-                <h2 class="title">${notice.title}</h2>
-                <div class="toggle-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </div>
-            </div>
-            <div class="notice-content">
-                <div class="content-inner notice-html-content">
-                    ${notice.content}
-                </div>
-            </div>
-        </article>
-    `;
-}
-
-/**
- * 공지사항이 없을 때 표시할 빈 상태 UI
+ * 빈 상태 UI 렌더링
  */
 function createEmptyState() {
     return `
@@ -84,7 +52,97 @@ function createEmptyState() {
 }
 
 /**
- * 사이드바 공지 목록을 렌더링합니다.
+ * 드롭다운(<select>) 메뉴 옵션을 렌더링합니다.
+ */
+function renderSelectOptions(notices) {
+    const selectEl = document.getElementById('noticeSelect');
+    if (!selectEl) return;
+
+    if (notices.length === 0) {
+        selectEl.innerHTML = '<option value="">등록된 공지가 없습니다</option>';
+        selectEl.disabled = true;
+        return;
+    }
+
+    selectEl.disabled = false;
+    selectEl.innerHTML = notices.map(notice => {
+        const badgeLabel = BADGE_CONFIG[notice.badge] ? `[${BADGE_CONFIG[notice.badge].label}]` : '';
+        const title = `${badgeLabel} ${notice.title} (${formatDate(notice.date)})`;
+        return `<option value="${notice.id}">${title}</option>`;
+    }).join('');
+}
+
+/**
+ * 선택된 특정 공지 내용을 뷰어에 렌더링합니다.
+ */
+function renderSelectedNotice(noticeId, notices) {
+    const viewer = document.getElementById('noticeViewer');
+    const header = document.getElementById('viewerHeader');
+
+    if (!viewer || !header) return;
+
+    if (!notices || notices.length === 0) {
+        viewer.innerHTML = createEmptyState();
+        header.style.display = 'none';
+        return;
+    }
+
+    // 선택된 ID에 해당하는 공지 찾기
+    const selectedNotice = notices.find(n => n.id === noticeId);
+
+    if (!selectedNotice) {
+        viewer.innerHTML = '<div class="empty-state"><p class="empty-title">해당 공지를 찾을 수 없습니다.</p></div>';
+        header.style.display = 'none';
+        return;
+    }
+
+    // 배지와 날짜 렌더링
+    const badgeConf = BADGE_CONFIG[selectedNotice.badge] || BADGE_CONFIG.notice;
+    const badgeEl = document.getElementById('viewerBadge');
+    if (badgeEl) {
+        badgeEl.className = `badge ${badgeConf.className}`;
+        badgeEl.textContent = badgeConf.label;
+    }
+
+    const dateEl = document.getElementById('viewerDate');
+    if (dateEl) {
+        dateEl.textContent = formatDate(selectedNotice.date);
+    }
+
+    header.style.display = 'flex';
+
+    // HTML 본문 렌더링
+    // 통째로 올려진 HTML 내용을 직접 삽입 (안전한 사이트 내 로직으로 가정)
+    viewer.innerHTML = selectedNotice.content;
+}
+
+/**
+ * 메인 공지사항 조회 로직 초기화
+ */
+function initViewer() {
+    const notices = getNotices();
+    renderSelectOptions(notices);
+    renderSidebar(notices); // 사이드바 보존
+
+    const selectEl = document.getElementById('noticeSelect');
+    if (selectEl) {
+        // 옵션 변경 시 뷰어 업데이트
+        selectEl.addEventListener('change', (e) => {
+            renderSelectedNotice(e.target.value, notices);
+        });
+
+        // 첫 번째 항목 강제 선택 및 렌더링
+        if (notices.length > 0) {
+            selectEl.value = notices[0].id;
+            renderSelectedNotice(notices[0].id, notices);
+        } else {
+            renderSelectedNotice(null, notices); // 빈 상태 렌더링
+        }
+    }
+}
+
+/**
+ * 사이드바 공지 목록을 렌더링합니다 (옵션 연동용).
  */
 function renderSidebar(notices) {
     const sidebarList = document.getElementById('sidebarNoticeList');
@@ -95,9 +153,9 @@ function renderSidebar(notices) {
         return;
     }
 
-    sidebarList.innerHTML = notices.map((notice, index) => `
+    sidebarList.innerHTML = notices.map(notice => `
         <li>
-            <a href="#" class="sidebar-item" data-index="${index}">
+            <a href="#" class="sidebar-item" data-id="${notice.id}">
                 <span class="sidebar-badge badge ${(BADGE_CONFIG[notice.badge] || BADGE_CONFIG.notice).className}">
                     ${(BADGE_CONFIG[notice.badge] || BADGE_CONFIG.notice).label}
                 </span>
@@ -106,54 +164,19 @@ function renderSidebar(notices) {
         </li>
     `).join('');
 
-    // 사이드바 항목 클릭 시 해당 카드로 스크롤
+    // 사이드바 항목 클릭 시 드롭다운 값 변경하고 뷰어 업데이트
     sidebarList.querySelectorAll('.sidebar-item').forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
-            const index = parseInt(item.dataset.index);
-            const cards = document.querySelectorAll('.notice-card');
-            if (cards[index]) {
-                cards[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
-                // 닫혀있으면 열기
-                if (!cards[index].classList.contains('expanded')) {
-                    cards[index].classList.add('expanded');
-                }
+            const id = item.dataset.id;
+            const selectEl = document.getElementById('noticeSelect');
+            if (selectEl) {
+                selectEl.value = id;
+                // change 강제 발생
+                selectEl.dispatchEvent(new Event('change'));
             }
             closeSidebar();
         });
-    });
-}
-
-/**
- * 메인 공지사항 목록을 렌더링합니다.
- */
-function renderNotices() {
-    const noticeList = document.getElementById('noticeList');
-    if (!noticeList) return;
-
-    const notices = getNotices();
-
-    if (notices.length === 0) {
-        noticeList.innerHTML = createEmptyState();
-    } else {
-        noticeList.innerHTML = notices.map(createNoticeCard).join('');
-        attachCardListeners();
-    }
-
-    renderSidebar(notices);
-}
-
-/**
- * 아코디언 카드의 클릭 이벤트를 연결합니다.
- */
-function attachCardListeners() {
-    document.querySelectorAll('.notice-card').forEach(card => {
-        const header = card.querySelector('.notice-header');
-        if (header) {
-            header.addEventListener('click', () => {
-                card.classList.toggle('expanded');
-            });
-        }
     });
 }
 
@@ -168,9 +191,9 @@ function closeSidebar() {
     document.getElementById('sidebarOverlay')?.classList.remove('visible');
 }
 
-// --- 초기화 ---
+// --- 초기화 이벤트 ---
 document.addEventListener('DOMContentLoaded', () => {
-    renderNotices();
+    initViewer();
 
     document.getElementById('menuToggle')?.addEventListener('click', openSidebar);
     document.getElementById('menuClose')?.addEventListener('click', closeSidebar);
