@@ -111,9 +111,19 @@ function renderSelectedNotice(noticeId, notices) {
 
     header.style.display = 'flex';
 
-    // HTML 본문 렌더링
-    // 통째로 올려진 HTML 내용을 직접 삽입 (안전한 사이트 내 로직으로 가정)
-    viewer.innerHTML = selectedNotice.content;
+    // HTML 본문 렌더링 (iframe 사용으로 스타일 분리 방지 충돌 보호)
+    // 원본 HTML 내용을 포함할 iframe 생성
+    viewer.innerHTML = ''; // 기본 내용 초기화
+
+    const iframe = document.createElement('iframe');
+    iframe.className = 'notice-iframe';
+
+    // iframe srcdoc에 원본 HTML 내용을 주입 (따옴표 이스케이프 필요시 처리 속성, 브라우저 자동 처리됨)
+    // sandbox 속성으로 악성 스크립트 실행 방지 (필요 시 'allow-scripts' 등 추가)
+    iframe.setAttribute('sandbox', 'allow-same-origin allow-popups');
+    iframe.srcdoc = selectedNotice.content;
+
+    viewer.appendChild(iframe);
 }
 
 /**

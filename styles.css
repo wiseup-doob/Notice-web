@@ -182,17 +182,19 @@ body {
 
 .notice-viewer {
     padding: 24px 20px;
-    min-height: 300px;
+    min-height: 50vh;
     font-size: 1rem;
     color: var(--text-primary);
     line-height: 1.8;
 }
 
-.notice-viewer img {
-    max-width: 100%;
-    height: auto;
+/* iframe 전용 스타일 */
+.notice-iframe {
+    width: 100%;
+    min-height: 60vh;
+    border: none;
     border-radius: 8px;
-    margin: 16px 0;
+    background-color: transparent;
 }
 
 /* --- Badges --- */
