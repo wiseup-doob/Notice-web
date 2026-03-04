@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <!-- 모바일 웹뷰에 최적화된 뷰포트 설정 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>와이즈업 학원 공지사항</title>
+    <meta name="description" content="와이즈업 학원 학부모 공지사항 페이지입니다.">
+
+    <!-- 프리미엄 폰트 (Pretendard) 적용 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+
+    <!-- 스타일시트 연결 -->
+    <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+
+    <!-- 상단 헤더 영역 -->
+    <header class="header">
+        <div class="header-content">
+            <div class="brand-area">
+                <div class="brand-logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 3L4 11H9V21H15V11H20L12 3Z" fill="#0084d1" />
+                        <circle cx="12" cy="14" r="2" fill="#f4d05d" />
+                    </svg>
+                </div>
+                <h1 class="academy-name">와이즈업 학원</h1>
+            </div>
+            <p class="subtitle">미래를 여는 와이즈업 학부모 소식지</p>
+        </div>
+
+        <!-- 오른쪽 위 메뉴 버튼 -->
+        <button id="menuToggle" class="menu-toggle" aria-label="메뉴 열기">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+    </header>
+
+    <!-- 사이드바 배경 (어둡게 처리) -->
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <!-- 우측 슬라이드 사이드바 -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2>공지 목록</h2>
+            <button id="menuClose" class="menu-close" aria-label="메뉴 닫기">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="sidebar-content">
+            <ul id="sidebarNoticeList" class="sidebar-notice-list">
+                <!-- app.js가 동적으로 렌더링합니다 -->
+            </ul>
+        </div>
+    </aside>
+
+    <!-- 공지사항 목록 영역 (app.js가 동적으로 렌더링) -->
+    <main class="container">
+        <div class="notice-list" id="noticeList">
+            <!-- app.js가 localStorage에서 공지를 불러와 여기에 렌더링합니다 -->
+        </div>
+    </main>
+
+    <script src="./app.js"></script>
+</body>
+
+</html>

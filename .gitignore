@@ -1,0 +1,10 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# 와이즈업 BI 원본 파일 (배포 제외)
+*.pdf

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>관리자 페이지 - 와이즈업 학원</title>
+
+    <!-- 프리미엄 폰트 (Pretendard) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+
+    <!-- 공통 스타일 -->
+    <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body class="admin-body">
+
+    <!-- PIN 잠금 화면 -->
+    <div id="pinScreen" class="pin-screen">
+        <div class="pin-box">
+            <div class="pin-logo">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 3L4 11H9V21H15V11H20L12 3Z" fill="#0084d1" />
+                    <circle cx="12" cy="14" r="2" fill="#f4d05d" />
+                </svg>
+            </div>
+            <h1 class="pin-title">관리자 로그인</h1>
+            <p class="pin-subtitle">와이즈업 학원 관리자 페이지입니다.</p>
+            <div class="pin-input-group">
+                <input type="password" id="pinInput" class="pin-input" placeholder="PIN 번호 입력" maxlength="6"
+                    inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+                <p id="pinError" class="pin-error" style="display:none;">PIN 번호가 틀렸습니다.</p>
+            </div>
+            <button id="pinSubmit" class="btn-primary" style="width:100%;">확인</button>
+        </div>
+    </div>
+
+    <!-- 관리자 메인 화면 (PIN 인증 후 표시) -->
+    <div id="adminMain" class="admin-main" style="display:none;">
+
+        <header class="admin-header">
+            <div class="admin-header-inner">
+                <div class="brand-area">
+                    <div class="brand-logo">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 3L4 11H9V21H15V11H20L12 3Z" fill="#0084d1" />
+                            <circle cx="12" cy="14" r="2" fill="#f4d05d" />
+                        </svg>
+                    </div>
+                    <h1 class="academy-name">관리자 페이지</h1>
+                </div>
+                <a href="./index.html" class="btn-outline-sm">사용자 페이지로 →</a>
+            </div>
+        </header>
+
+        <main class="admin-container">
+
+            <!-- 새 공지 등록 카드 -->
+            <section class="admin-card">
+                <h2 class="admin-section-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    새 공지 등록
+                </h2>
+
+                <div class="form-group">
+                    <label class="form-label" for="noticeTitle">공지 제목 <span class="required">*</span></label>
+                    <input type="text" id="noticeTitle" class="form-input" placeholder="예) 3월 봄학기 개강 안내">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="noticeDate">날짜 <span class="required">*</span></label>
+                        <input type="date" id="noticeDate" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="noticeBadge">배지 유형</label>
+                        <select id="noticeBadge" class="form-input form-select">
+                            <option value="new">New (노란색)</option>
+                            <option value="notice">공지 (회색)</option>
+                            <option value="important">중요 (빨간색)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">공지 내용 HTML 파일 <span class="required">*</span></label>
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <input type="file" id="htmlFileInput" accept=".html,.htm" style="display:none;">
+                        <div class="file-upload-content" id="fileUploadContent">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <p class="file-upload-text">클릭하거나 HTML 파일을 여기로 드래그해 주세요</p>
+                            <p class="file-upload-hint">.html, .htm 파일만 업로드 가능합니다</p>
+                        </div>
+                    </div>
+                    <div id="filePreview" class="file-preview" style="display:none;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0084d1" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        <span id="filePreviewName" class="file-preview-name"></span>
+                        <button id="fileClearBtn" class="file-clear-btn" aria-label="파일 제거">✕</button>
+                    </div>
+                </div>
+
+                <p id="formError" class="form-error" style="display:none;"></p>
+                <button id="submitNotice" class="btn-primary" style="width:100%;">공지 등록하기</button>
+            </section>
+
+            <!-- 등록된 공지 목록 -->
+            <section class="admin-card">
+                <h2 class="admin-section-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                    </svg>
+                    등록된 공지 목록
+                </h2>
+                <div id="adminNoticeList" class="admin-notice-list">
+                    <!-- admin.js가 렌더링 -->
+                </div>
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- 완료 토스트 -->
+    <div id="toast" class="toast" style="display:none;"></div>
+
+    <script src="./admin.js"></script>
+</body>
+
+</html>
