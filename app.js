@@ -77,7 +77,7 @@ function renderNotice(noticeId, notices) {
     viewer.innerHTML = '';
     const iframe = document.createElement('iframe');
     iframe.className = 'notice-iframe';
-    iframe.setAttribute('sandbox', 'allow-same-origin allow-popups');
+    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups');
     iframe.srcdoc = notice.content;
     viewer.appendChild(iframe);
 }
