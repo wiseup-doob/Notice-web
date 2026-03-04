@@ -1,8 +1,6 @@
 /**
- * app.js - 와이즈업 학원 공지사항 사용자 페이지 로직 (드롭다운 방식)
+ * app.js - 와이즈업 학원 공지사항 사용자 페이지 (Firebase Firestore)
  */
-
-const STORAGE_KEY = 'wiseup_notices';
 
 // --- 배지 설정 ---
 const BADGE_CONFIG = {
@@ -12,19 +10,26 @@ const BADGE_CONFIG = {
 };
 
 /**
- * localStorage에서 공지사항 목록을 불러옵니다.
+ * Firestore에서 공지사항 목록을 불러옵니다 (최신순 정렬).
  */
-function getNotices() {
+async function getNotices() {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
+        const snapshot = await db.collection('notices')
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
     } catch (e) {
+        console.error('공지사항 로드 실패:', e);
         return [];
     }
 }
 
 /**
- * 날짜 문자열을 표시용 형식으로 변환합니다. (2026-03-04 → 2026.03.04)
+ * 날짜 문자열을 표시용 형식으로 변환합니다.
  */
 function formatDate(dateStr) {
     return dateStr ? dateStr.replace(/-/g, '.') : '';
@@ -87,7 +92,6 @@ function renderSelectedNotice(noticeId, notices) {
         return;
     }
 
-    // 선택된 ID에 해당하는 공지 찾기
     const selectedNotice = notices.find(n => n.id === noticeId);
 
     if (!selectedNotice) {
@@ -111,48 +115,40 @@ function renderSelectedNotice(noticeId, notices) {
 
     header.style.display = 'flex';
 
-    // HTML 본문 렌더링 (iframe 사용으로 스타일 분리 방지 충돌 보호)
-    // 원본 HTML 내용을 포함할 iframe 생성
-    viewer.innerHTML = ''; // 기본 내용 초기화
-
+    // HTML 본문 렌더링 (iframe으로 스타일 격리)
+    viewer.innerHTML = '';
     const iframe = document.createElement('iframe');
     iframe.className = 'notice-iframe';
-
-    // iframe srcdoc에 원본 HTML 내용을 주입 (따옴표 이스케이프 필요시 처리 속성, 브라우저 자동 처리됨)
-    // sandbox 속성으로 악성 스크립트 실행 방지 (필요 시 'allow-scripts' 등 추가)
     iframe.setAttribute('sandbox', 'allow-same-origin allow-popups');
     iframe.srcdoc = selectedNotice.content;
-
     viewer.appendChild(iframe);
 }
 
 /**
- * 메인 공지사항 조회 로직 초기화
+ * 메인 초기화 (Firestore에서 데이터 로딩)
  */
-function initViewer() {
-    const notices = getNotices();
+async function initViewer() {
+    const notices = await getNotices();
     renderSelectOptions(notices);
-    renderSidebar(notices); // 사이드바 보존
+    renderSidebar(notices);
 
     const selectEl = document.getElementById('noticeSelect');
     if (selectEl) {
-        // 옵션 변경 시 뷰어 업데이트
         selectEl.addEventListener('change', (e) => {
             renderSelectedNotice(e.target.value, notices);
         });
 
-        // 첫 번째 항목 강제 선택 및 렌더링
         if (notices.length > 0) {
             selectEl.value = notices[0].id;
             renderSelectedNotice(notices[0].id, notices);
         } else {
-            renderSelectedNotice(null, notices); // 빈 상태 렌더링
+            renderSelectedNotice(null, notices);
         }
     }
 }
 
 /**
- * 사이드바 공지 목록을 렌더링합니다 (옵션 연동용).
+ * 사이드바 렌더링
  */
 function renderSidebar(notices) {
     const sidebarList = document.getElementById('sidebarNoticeList');
@@ -174,7 +170,6 @@ function renderSidebar(notices) {
         </li>
     `).join('');
 
-    // 사이드바 항목 클릭 시 드롭다운 값 변경하고 뷰어 업데이트
     sidebarList.querySelectorAll('.sidebar-item').forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
@@ -182,7 +177,6 @@ function renderSidebar(notices) {
             const selectEl = document.getElementById('noticeSelect');
             if (selectEl) {
                 selectEl.value = id;
-                // change 강제 발생
                 selectEl.dispatchEvent(new Event('change'));
             }
             closeSidebar();
@@ -190,21 +184,19 @@ function renderSidebar(notices) {
     });
 }
 
-// --- 사이드바 열기/닫기 ---
+// --- 사이드바 ---
 function openSidebar() {
     document.getElementById('sidebar')?.classList.add('open');
     document.getElementById('sidebarOverlay')?.classList.add('visible');
 }
-
 function closeSidebar() {
     document.getElementById('sidebar')?.classList.remove('open');
     document.getElementById('sidebarOverlay')?.classList.remove('visible');
 }
 
-// --- 초기화 이벤트 ---
+// --- 초기화 ---
 document.addEventListener('DOMContentLoaded', () => {
     initViewer();
-
     document.getElementById('menuToggle')?.addEventListener('click', openSidebar);
     document.getElementById('menuClose')?.addEventListener('click', closeSidebar);
     document.getElementById('sidebarOverlay')?.addEventListener('click', closeSidebar);

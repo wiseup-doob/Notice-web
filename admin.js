@@ -1,275 +1,241 @@
 /**
- * admin.js - 와이즈업 학원 공지사항 관리자 페이지 로직
+ * admin.js - 와이즈업 학원 관리자 페이지 (Firebase Firestore)
  */
 
-const STORAGE_KEY = 'wiseup_notices';
-const DEFAULT_PIN = '0000'; // 초기 PIN 번호 (나중에 변경 가능)
+const DEFAULT_PIN = '0000';
 
-let selectedFileContent = null;
-let selectedFileName = null;
+// --- PIN 인증 ---
+function initPinAuth() {
+    const pinScreen = document.getElementById('pinScreen');
+    const adminMain = document.getElementById('adminMain');
+    const pinInput = document.getElementById('pinInput');
+    const pinSubmit = document.getElementById('pinSubmit');
+    const pinError = document.getElementById('pinError');
 
-// ===========================
-// PIN 인증
-// ===========================
-
-function checkPin() {
-    const input = document.getElementById('pinInput').value.trim();
-    const error = document.getElementById('pinError');
-
-    if (input === DEFAULT_PIN) {
-        document.getElementById('pinScreen').style.display = 'none';
-        document.getElementById('adminMain').style.display = 'block';
-        renderAdminNoticeList();
-        initDateField();
-    } else {
-        error.style.display = 'block';
-        document.getElementById('pinInput').value = '';
-        document.getElementById('pinInput').focus();
-    }
-}
-
-document.getElementById('pinSubmit')?.addEventListener('click', checkPin);
-document.getElementById('pinInput')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') checkPin();
-});
-
-// ===========================
-// 날짜 초기값 설정
-// ===========================
-
-function initDateField() {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    document.getElementById('noticeDate').value = `${yyyy}-${mm}-${dd}`;
-}
-
-// ===========================
-// HTML 파일 업로드 처리
-// ===========================
-
-const fileUploadArea = document.getElementById('fileUploadArea');
-const htmlFileInput = document.getElementById('htmlFileInput');
-
-fileUploadArea?.addEventListener('click', () => htmlFileInput?.click());
-
-fileUploadArea?.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    fileUploadArea.classList.add('drag-over');
-});
-
-fileUploadArea?.addEventListener('dragleave', () => {
-    fileUploadArea.classList.remove('drag-over');
-});
-
-fileUploadArea?.addEventListener('drop', (e) => {
-    e.preventDefault();
-    fileUploadArea.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileSelect(file);
-});
-
-htmlFileInput?.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) handleFileSelect(file);
-});
-
-function handleFileSelect(file) {
-    const allowedExtensions = ['.html', '.htm'];
-    const ext = '.' + file.name.split('.').pop().toLowerCase();
-    if (!allowedExtensions.includes(ext)) {
-        showFormError('HTML 파일(.html, .htm)만 업로드 가능합니다.');
-        return;
+    function attemptLogin() {
+        const pin = pinInput.value.trim();
+        if (pin === DEFAULT_PIN) {
+            pinScreen.style.display = 'none';
+            adminMain.style.display = 'block';
+            loadNoticeList();
+        } else {
+            pinError.style.display = 'block';
+            pinInput.value = '';
+            pinInput.focus();
+        }
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        // HTML 파일에서 body 안의 내용만 추출
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(e.target.result, 'text/html');
-        const bodyContent = doc.body ? doc.body.innerHTML : e.target.result;
-
-        selectedFileContent = bodyContent;
-        selectedFileName = file.name;
-
-        // UI 업데이트
-        document.getElementById('fileUploadContent').style.display = 'none';
-        const preview = document.getElementById('filePreview');
-        preview.style.display = 'flex';
-        document.getElementById('filePreviewName').textContent = file.name;
-        hideFormError();
-    };
-    reader.readAsText(file, 'UTF-8');
-}
-
-document.getElementById('fileClearBtn')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    clearFileSelection();
-});
-
-function clearFileSelection() {
-    selectedFileContent = null;
-    selectedFileName = null;
-    htmlFileInput.value = '';
-    document.getElementById('fileUploadContent').style.display = 'flex';
-    document.getElementById('filePreview').style.display = 'none';
-}
-
-// ===========================
-// 공지 CRUD (localStorage)
-// ===========================
-
-function getNotices() {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-        return [];
-    }
-}
-
-function saveNotices(notices) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(notices));
-}
-
-function addNotice(notice) {
-    const notices = getNotices();
-    notices.unshift(notice); // 최신 순으로 맨 앞에 추가
-    saveNotices(notices);
-}
-
-function deleteNotice(id) {
-    const notices = getNotices().filter(n => n.id !== id);
-    saveNotices(notices);
-    renderAdminNoticeList();
-    showToast('공지가 삭제되었습니다.');
-}
-
-// ===========================
-// 공지 등록
-// ===========================
-
-document.getElementById('submitNotice')?.addEventListener('click', () => {
-    const title = document.getElementById('noticeTitle').value.trim();
-    const date = document.getElementById('noticeDate').value;
-    const badge = document.getElementById('noticeBadge').value;
-
-    if (!title) {
-        showFormError('공지 제목을 입력해 주세요.');
-        document.getElementById('noticeTitle').focus();
-        return;
-    }
-    if (!date) {
-        showFormError('날짜를 선택해 주세요.');
-        return;
-    }
-    if (!selectedFileContent) {
-        showFormError('공지 내용 HTML 파일을 업로드해 주세요.');
-        return;
-    }
-
-    const notice = {
-        id: String(Date.now()),
-        title,
-        date,
-        badge,
-        content: selectedFileContent,
-    };
-
-    addNotice(notice);
-    resetForm();
-    renderAdminNoticeList();
-    showToast('공지가 성공적으로 등록되었습니다! ✅');
-});
-
-function resetForm() {
-    document.getElementById('noticeTitle').value = '';
-    initDateField();
-    document.getElementById('noticeBadge').value = 'new';
-    clearFileSelection();
-    hideFormError();
-}
-
-// ===========================
-// 관리자 공지 목록 렌더링
-// ===========================
-
-const BADGE_CONFIG = {
-    new: { label: 'New', className: 'badge-new' },
-    notice: { label: '공지', className: 'badge-normal' },
-    important: { label: '중요', className: 'badge-important' },
-};
-
-function formatDate(dateStr) {
-    return dateStr ? dateStr.replace(/-/g, '.') : '';
-}
-
-function renderAdminNoticeList() {
-    const container = document.getElementById('adminNoticeList');
-    if (!container) return;
-
-    const notices = getNotices();
-    if (notices.length === 0) {
-        container.innerHTML = `
-            <div class="admin-empty">
-                <p>등록된 공지가 없습니다. 위에서 새 공지를 추가해 주세요.</p>
-            </div>`;
-        return;
-    }
-
-    container.innerHTML = notices.map(notice => {
-        const badge = BADGE_CONFIG[notice.badge] || BADGE_CONFIG.notice;
-        return `
-            <div class="admin-notice-item">
-                <div class="admin-notice-info">
-                    <span class="badge ${badge.className}">${badge.label}</span>
-                    <span class="admin-notice-title">${notice.title}</span>
-                    <span class="admin-notice-date">${formatDate(notice.date)}</span>
-                </div>
-                <button class="btn-delete" data-id="${notice.id}" aria-label="공지 삭제">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-                        <path d="M10 11v6"></path><path d="M14 11v6"></path>
-                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
-                    </svg>
-                </button>
-            </div>
-        `;
-    }).join('');
-
-    // 삭제 버튼 이벤트
-    container.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (confirm('이 공지를 삭제하시겠습니까?')) {
-                deleteNotice(btn.dataset.id);
-            }
-        });
+    pinSubmit.addEventListener('click', attemptLogin);
+    pinInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') attemptLogin();
     });
 }
 
-// ===========================
-// UI 유틸리티
-// ===========================
+// --- 파일 업로드 ---
+let uploadedHtmlContent = '';
 
-function showFormError(msg) {
+function initFileUpload() {
+    const fileInput = document.getElementById('htmlFileInput');
+    const uploadArea = document.getElementById('fileUploadArea');
+    const uploadContent = document.getElementById('fileUploadContent');
+    const preview = document.getElementById('filePreview');
+    const previewName = document.getElementById('filePreviewName');
+    const clearBtn = document.getElementById('fileClearBtn');
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('drag-over');
+    });
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('drag-over');
+    });
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('drag-over');
+        if (e.dataTransfer.files.length > 0) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            handleFile(fileInput.files[0]);
+        }
+    });
+
+    clearBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        clearFile();
+    });
+
+    function handleFile(file) {
+        if (!file.name.match(/\.(html|htm)$/i)) {
+            showError('HTML 파일만 업로드 가능합니다.');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            uploadedHtmlContent = e.target.result;
+            uploadContent.style.display = 'none';
+            preview.style.display = 'flex';
+            previewName.textContent = file.name;
+        };
+        reader.readAsText(file);
+    }
+
+    function clearFile() {
+        uploadedHtmlContent = '';
+        fileInput.value = '';
+        uploadContent.style.display = 'flex';
+        preview.style.display = 'none';
+    }
+}
+
+// --- 공지 등록 (Firestore에 저장) ---
+function initNoticeForm() {
+    const submitBtn = document.getElementById('submitNotice');
+
+    submitBtn.addEventListener('click', async () => {
+        const title = document.getElementById('noticeTitle').value.trim();
+        const date = document.getElementById('noticeDate').value;
+        const badge = document.getElementById('noticeBadge').value;
+
+        // 검증
+        if (!title) { showError('공지 제목을 입력해 주세요.'); return; }
+        if (!date) { showError('날짜를 선택해 주세요.'); return; }
+        if (!uploadedHtmlContent) { showError('HTML 파일을 업로드해 주세요.'); return; }
+
+        hideError();
+        submitBtn.disabled = true;
+        submitBtn.textContent = '등록 중...';
+
+        try {
+            // Firestore에 공지 추가
+            await db.collection('notices').add({
+                title: title,
+                date: date,
+                badge: badge,
+                content: uploadedHtmlContent,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // 폼 초기화
+            document.getElementById('noticeTitle').value = '';
+            document.getElementById('noticeDate').value = '';
+            document.getElementById('noticeBadge').value = 'new';
+            uploadedHtmlContent = '';
+            document.getElementById('htmlFileInput').value = '';
+            document.getElementById('fileUploadContent').style.display = 'flex';
+            document.getElementById('filePreview').style.display = 'none';
+
+            showToast('공지가 성공적으로 등록되었습니다!');
+            loadNoticeList(); // 목록 새로고침
+        } catch (e) {
+            console.error('공지 등록 실패:', e);
+            showError('공지 등록에 실패했습니다. 다시 시도해 주세요.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '공지 등록하기';
+        }
+    });
+}
+
+// --- 공지 목록 로드 (Firestore에서 읽기) ---
+async function loadNoticeList() {
+    const listContainer = document.getElementById('adminNoticeList');
+    if (!listContainer) return;
+
+    listContainer.innerHTML = '<p class="admin-empty">로딩 중...</p>';
+
+    try {
+        const snapshot = await db.collection('notices')
+            .orderBy('createdAt', 'desc')
+            .get();
+
+        if (snapshot.empty) {
+            listContainer.innerHTML = '<p class="admin-empty">등록된 공지가 없습니다.</p>';
+            return;
+        }
+
+        listContainer.innerHTML = snapshot.docs.map(doc => {
+            const notice = doc.data();
+            return `
+                <div class="admin-notice-item">
+                    <div class="admin-notice-info">
+                        <span class="admin-notice-title">${notice.title}</span>
+                        <span class="admin-notice-date">${notice.date ? notice.date.replace(/-/g, '.') : ''}</span>
+                    </div>
+                    <button class="btn-delete" data-id="${doc.id}" aria-label="삭제">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        // 삭제 버튼 이벤트 바인딩
+        listContainer.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                if (confirm('정말 이 공지를 삭제하시겠습니까?')) {
+                    try {
+                        await db.collection('notices').doc(id).delete();
+                        showToast('공지가 삭제되었습니다.');
+                        loadNoticeList();
+                    } catch (e) {
+                        console.error('삭제 실패:', e);
+                        showError('삭제에 실패했습니다. 다시 시도해 주세요.');
+                    }
+                }
+            });
+        });
+
+    } catch (e) {
+        console.error('목록 로드 실패:', e);
+        listContainer.innerHTML = '<p class="admin-empty">목록을 불러오는 데 실패했습니다.</p>';
+    }
+}
+
+// --- 헬퍼 함수: 오류 표시 ---
+function showError(msg) {
     const el = document.getElementById('formError');
-    el.textContent = msg;
-    el.style.display = 'block';
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
 }
 
-function hideFormError() {
-    document.getElementById('formError').style.display = 'none';
+function hideError() {
+    const el = document.getElementById('formError');
+    if (el) { el.style.display = 'none'; }
 }
 
+// --- 헬퍼 함수: 토스트 알림 ---
 function showToast(msg) {
     const toast = document.getElementById('toast');
+    if (!toast) return;
     toast.textContent = msg;
     toast.style.display = 'block';
-    toast.classList.add('show');
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.style.display = 'none', 400);
-    }, 2500);
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => { toast.style.display = 'none'; }, 300);
+        }, 2500);
+    });
 }
+
+// --- 초기화 ---
+document.addEventListener('DOMContentLoaded', () => {
+    initPinAuth();
+    initFileUpload();
+    initNoticeForm();
+
+    // 오늘 날짜 자동 설정
+    const dateInput = document.getElementById('noticeDate');
+    if (dateInput) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
+});
