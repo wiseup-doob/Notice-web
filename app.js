@@ -25,6 +25,22 @@ function formatDate(dateStr) {
     return dateStr ? dateStr.replace(/-/g, '.') : '';
 }
 
+/** 유튜브 URL에서 영상 ID 추출 */
+function extractYouTubeId(url) {
+    if (!url) return null;
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
+        /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+        /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+        /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+    ];
+    for (const p of patterns) {
+        const m = url.match(p);
+        if (m) return m[1];
+    }
+    return null;
+}
+
 /** 드롭다운 옵션 렌더링 */
 function renderSelectOptions(notices) {
     const sel = document.getElementById('noticeSelect');
@@ -73,8 +89,20 @@ function renderNotice(noticeId, notices) {
     document.getElementById('viewerDate').textContent = formatDate(notice.date);
     header.style.display = 'flex';
 
-    // iframe
+    // 유튜브 임베드 (있는 경우 최상단에 삽입)
     viewer.innerHTML = '';
+    const videoId = extractYouTubeId(notice.youtubeUrl);
+    if (videoId) {
+        const ytWrap = document.createElement('div');
+        ytWrap.className = 'yt-embed';
+        ytWrap.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?rel=0" 
+            frameborder="0" allowfullscreen 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            style="width:100%;aspect-ratio:16/9;border:none;max-height:400px;"></iframe>`;
+        viewer.appendChild(ytWrap);
+    }
+
+    // HTML iframe
     const iframe = document.createElement('iframe');
     iframe.className = 'notice-iframe';
     iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups');

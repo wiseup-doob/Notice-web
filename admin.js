@@ -101,6 +101,7 @@ function initNoticeForm() {
         const title = document.getElementById('noticeTitle').value.trim();
         const date = document.getElementById('noticeDate').value;
         const badge = document.getElementById('noticeBadge').value;
+        const youtubeUrl = (document.getElementById('youtubeUrl')?.value || '').trim();
 
         // 검증
         if (!title) { showError('공지 제목을 입력해 주세요.'); return; }
@@ -118,6 +119,7 @@ function initNoticeForm() {
                 date: date,
                 badge: badge,
                 content: uploadedHtmlContent,
+                youtubeUrl: youtubeUrl,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
@@ -125,6 +127,7 @@ function initNoticeForm() {
             document.getElementById('noticeTitle').value = '';
             document.getElementById('noticeDate').value = '';
             document.getElementById('noticeBadge').value = 'new';
+            if (document.getElementById('youtubeUrl')) document.getElementById('youtubeUrl').value = '';
             uploadedHtmlContent = '';
             document.getElementById('htmlFileInput').value = '';
             document.getElementById('fileUploadContent').style.display = 'flex';
